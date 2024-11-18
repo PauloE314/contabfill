@@ -95,6 +95,7 @@ class BradescoHandler(BaseHandler):
             date=cls.safe_re(cls.DATE_RE, content),
             raw_value=cls.safe_re(cls.RAW_VALUE_RE, content),
             destiny=cls.safe_re(cls.DESTINY_RE, content),
+            detail=cls.safe_re(r"(.*)Descrição:", content),
         )
 
     @classmethod
@@ -169,11 +170,18 @@ def export_to_csv(entries: list[Entry]):
         ]
         data.extend(
             [
-                [r.date, r.raw_value, r.tax, r.fines, r.total, r.destiny, ""]
+                [
+                    r.date,
+                    r.raw_value,
+                    r.tax,
+                    r.fines,
+                    r.total,
+                    r.detail or r.destiny,
+                    "",
+                ]
                 for r in entries
             ]
         )
-        print(data)
 
         writer.writerows(data)
 
