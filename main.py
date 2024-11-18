@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime
 from dataclasses import dataclass, field
+import locale
 import os
 import re
 from typing import Callable
@@ -12,8 +13,8 @@ class Entry:
     date: str
     raw_value: str
     destiny: str
-    tax: str = field(default="")
-    fines: str = field(default="")
+    tax: str = field(default="R$ 0,00")
+    fines: str = field(default="R$ 0,00")
     total: str = field(default="")
     detail: str = field(default="")
 
@@ -34,7 +35,7 @@ class BaseHandler:
         total=None,
         detail=None,
     ):
-        if tax or fines:
+        if (tax and tax != "R$ 0,00") or (fines and fines != "R$ 0,00"):
             return [
                 Entry(
                     date=date,
@@ -125,6 +126,11 @@ class StoneHandler(BaseHandler):
         content = page.extract_text()
 
         date = cls.safe_re(r"no dia (.+)", content)
+        if date:
+            date = datetime.strptime(date, "%d de %B de %Y às %H:%M:%S").strftime(
+                "%d/%m/%Y - %Hh%M"
+            )
+
         raw_value = cls.safe_re(r"(R\$ \d+\.?\d+,\d+)", content)
         destiny = cls.safe_re(r"Nome\n(.+)", content, 1)
 
@@ -187,6 +193,8 @@ def export_to_csv(entries: list[Entry]):
 
 
 def main():
+    locale.setlocale(locale.LC_ALL, "pt_BR.UTF-8")
+
     entries = []
 
     for path in get_pdf_paths_from_folder("./examples/Bradesco"):
