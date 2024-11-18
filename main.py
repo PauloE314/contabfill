@@ -123,9 +123,9 @@ class StoneHandler(BaseHandler):
     def handle(cls, page: pypdf.PageObject):
         content = page.extract_text()
 
-        date = re.findall(r"no dia (.+)", content)[0]
-        raw_value = re.findall(r"R\$ (\d+\.?\d+,\d+)", content)[0]
-        destiny = re.findall(r"Nome\n(.+)", content)[1]
+        date = cls.safe_re(r"no dia (.+)", content)
+        raw_value = cls.safe_re(r"(R\$ \d+\.?\d+,\d+)", content)
+        destiny = cls.safe_re(r"Nome\n(.+)", content, 1)
 
         return cls.generate_entries(date, raw_value, destiny)
 
@@ -156,27 +156,38 @@ def get_pdf_paths_from_folder(folder):
 def export_to_csv(entries: list[Entry]):
     with open(f"./output/{datetime.now()}.csv", "w", newline="") as file:
         writer = csv.writer(file)
-
-        data = [["Data", "Nome", "Valor"]]
-        data.extend([[r.date, r.name, r.value] for r in entries])
+        data = [
+            [
+                "Data",
+                "Valor Bruto",
+                "Juros",
+                "Multa",
+                "Valor Total",
+                "Conta Crédito",
+                "Conta Débito",
+            ]
+        ]
+        data.extend(
+            [
+                [r.date, r.raw_value, r.tax, r.fines, r.total, r.destiny, ""]
+                for r in entries
+            ]
+        )
         print(data)
 
         writer.writerows(data)
 
 
 def main():
-    receipts = []
+    entries = []
 
     for path in get_pdf_paths_from_folder("./examples/Bradesco"):
-        receipts.extend(extract_entries_from_pdf(path, BradescoHandler.handle))
+        entries.extend(extract_entries_from_pdf(path, BradescoHandler.handle))
 
-    # # export_to_csv(receipts)
-    # content = extract_entries_from_pdf(
-    #     # "./examples/Bradesco/Bradesco_folha_de_pagamento.pdf",
-    #     "./examples/Bradesco/Bradesco_impostos.pdf",
-    #     # "./examples/Bradesco/Bradesco_pix.pdf",
-    #     BradescoHandler.handle,
-    # )
+    for path in get_pdf_paths_from_folder("./examples/Stone"):
+        entries.extend(extract_entries_from_pdf(path, StoneHandler.handle))
+
+    export_to_csv(entries)
 
 
 if __name__ == "__main__":
