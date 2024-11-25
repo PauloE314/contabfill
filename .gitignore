@@ -4,3 +4,4 @@ env
 examples
 .vscode
 output
+__pycache__
