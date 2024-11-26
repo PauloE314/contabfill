@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import List, Callable
 import re
 import pypdf
+import logging
 
 
 @dataclass
@@ -35,6 +36,8 @@ def cents_to_currency(cents: int):
 
 
 class BaseReader:
+    BANK: str = "BASE"
+
     def __init__(self, page: pypdf.PageObject):
         self.page = page
 
@@ -79,23 +82,24 @@ class BaseReader:
         return [Release(date=date, value=value, destiny=destiny, detail=detail)]
 
     @classmethod
-    def extract_releases(cls, path):
+    def extract_releases(cls, path: str):
         pages = pypdf.PdfReader(path).pages
         releases = []
 
-        print(f"======Processando aquivo: {path}=======")
+        logging.info(f"Aquivo: {path.split("/")[-1]}")
         for i, page in enumerate(pages, 1):
             try:
                 releases.extend(cls(page).handle())
 
-                print(f"Página {i} processada com sucesso")
+                logging.info(f"Página {i} processada com sucesso")
             except Exception as e:
-                print(f"Ocorreu um erro na página {i} do arquivo - {e}")
+                logging.error(f"Ocorreu um erro na página {i} do arquivo {path} - {e}")
 
         return releases
 
 
 class BradescoReader(BaseReader):
+    BANK = "Bradesco"
     DESTINY_RE = r"(.+)Nome:"
     DATE_RE = r"Data da operação: (\d{2}\/\d{2}\/\d{2})"
     VALUE_RE = r"(.+)Valor:"
@@ -156,6 +160,8 @@ class BradescoReader(BaseReader):
 
 
 class StoneReader(BaseReader):
+    BANK = "Stone"
+
     def handle(self):
         content = self.page.extract_text()
 
@@ -167,3 +173,11 @@ class StoneReader(BaseReader):
         destiny = safe_re(r"Nome\n(.+)", content, 1)
 
         return self.generate_entries(date, value, destiny)
+
+
+READER_LIST: List[type[BaseReader]] = [
+    BradescoReader,
+    StoneReader,
+]
+
+BANK_LIST = list(map(lambda Reader: Reader.BANK, READER_LIST))

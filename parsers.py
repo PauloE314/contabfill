@@ -5,8 +5,11 @@ from readers import Release
 
 
 class CSVParser:
-    def export_releases(self, releases: List[Release]):
-        with open(f"./output/{datetime.now()}.csv", "w", newline="") as file:
+    def export_releases(self, releases: List[Release], filename=None):
+        if not filename:
+            filename = f"{self.folder}{datetime.now()}.csv"
+
+        with open(filename, "w", newline="") as file:
             writer = csv.writer(file)
             data = [
                 [
