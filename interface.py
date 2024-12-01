@@ -1,7 +1,8 @@
+import traceback
 from typing import Callable, List
-import tkinter as tk
-from tkinter import filedialog, messagebox, font
 from io import StringIO
+from tkinter import filedialog, messagebox, font
+import tkinter as tk
 from datetime import datetime
 from readers import BANK_LIST, Release
 from parsers import CSVParser
@@ -15,17 +16,20 @@ class GUI:
     paths: List[str] = []
     bank_selection: tk.StringVar
     selected_files_frame: tk.Frame
-    log_label: tk.Label
-    log_message: tk.Message
     log_stream: StringIO
     process_handler: Callable[[str, List[str]], None]
+    parser: CSVParser
 
     def __init__(
-        self, on_process: Callable[[str, List[str]], None], log_stream: StringIO
+        self,
+        log_stream: StringIO,
+        parser: CSVParser,
+        on_process: Callable[[str, List[str]], List[Release]],
     ):
+        self.parser = parser
+        self.log_stream = log_stream
         self.process_handler = on_process
         self.root = tk.Tk()
-        self.log_stream = log_stream
 
     def start(self):
         self.presets()
@@ -40,11 +44,6 @@ class GUI:
         self.root.geometry(f"{self.WIDTH}x{self.HEIGHT}+{center_x}+{center_y}")
 
     def build(self):
-        self.root.configure(padx=15, pady=15)
-        self.root.rowconfigure(2, weight=1)
-        self.root.rowconfigure(1, weight=1)
-        self.root.columnconfigure(2, weight=1)
-
         # Bank selection
         bank_label = tk.Label(self.root, text="Banco:")
         self.bank_var = tk.StringVar(self.root)
@@ -61,20 +60,6 @@ class GUI:
         self.selected_files_frame = tk.Frame(self.root, borderwidth=1, relief="sunken")
         self.__update_selected_file_list()
 
-        # Log section
-        log_frame = tk.Frame(self.root, borderwidth=1, relief="sunken")
-        self.log_label = tk.Label(
-            log_frame,
-            text="Relatório do último processamento",
-            borderwidth=1,
-            relief="sunken",
-        )
-        self.log_message = tk.Message(
-            log_frame,
-            anchor="nw",
-            width=self.root.winfo_screenwidth() / 3,
-        )
-
         # Process
         process_button = tk.Button(
             self.root,
@@ -82,12 +67,19 @@ class GUI:
             command=self.__handle_process_button,
         )
 
+        # Grid
+        self.root.maxsize(1000, 500)
+        self.root.configure(padx=15, pady=15)
+        self.root.rowconfigure(1, weight=1)
+        self.root.rowconfigure(2, weight=1)
+        self.root.columnconfigure(2, weight=1)
+        self.root.columnconfigure(3, weight=1, minsize=300)
+
         self.selected_files_frame.grid(
-            row=0, column=2, rowspan=2, sticky="news", padx=(15, 0)
+            row=0, column=3, rowspan=3, sticky="news", padx=(15, 0)
         )
-        log_frame.grid(row=2, column=2, sticky="news", padx=(15, 0), pady=(15, 0))
-        self.log_label.pack(pady=(5, 20), ipady=5, ipadx=10)
-        self.log_message.pack(fill="both")
+        self.selected_files_frame.grid_propagate(False)
+
         bank_label.grid(row=0, column=0, sticky="W")
         bank_selection.grid(row=0, column=1, sticky="W")
         find_file_label.grid(row=1, column=0, sticky="NW")
@@ -144,20 +136,31 @@ class GUI:
         try:
             releases = self.process_handler(self.bank_var.get(), self.paths)
         except Exception as e:
-            messagebox.showerror(title="Error durante o processamento", message=e)
-            raise e
+            self.__save_error_file(e)
+            return
 
         full_filename = filedialog.asksaveasfilename(
-            defaultextension=".csv", filetypes=(("CSV", "*.csv"),)
+            defaultextension=self.parser.DEFAULT_EXTENSION,
+            filetypes=self.parser.FILE_TYPES,
         )
 
         if not full_filename:
             return
 
-        CSVParser().export_releases(releases, filename=full_filename)
+        self.parser.export_releases(releases, filename=full_filename)
+        self.paths = []
+        self.__update_selected_file_list()
 
-        self.log_message.config(
-            text=f"Horário: {datetime.now()}\n{"="*30}\n{self.log_stream.getvalue()}"
+    def __save_error_file(self, error: Exception):
+        file = filedialog.asksaveasfile(
+            initialfile=f"Error - {datetime.now()}",
+            mode="w",
+            defaultextension=".txt",
+            filetypes=(("TXT", "*.txt"),),
         )
-        self.log_stream.truncate(0)
-        self.log_stream.seek(0)
+
+        if not file:
+            return
+
+        file.write(traceback.format_exc())
+        file.close()

@@ -1,14 +1,13 @@
 import locale
-from typing import Callable
-import pypdf
+import logging
 from readers import READER_LIST
 from parsers import CSVParser
 from interface import GUI
 from io import StringIO
-import logging
+import traceback
 
 
-def files_selected(bank, paths):
+def process_files(bank, paths):
     for Reader in READER_LIST:
         if bank == Reader.BANK:
             releases = []
@@ -26,7 +25,13 @@ def main():
     log_stream = StringIO()
     logging.basicConfig(stream=log_stream, level=logging.INFO, format="%(message)s")
 
-    gui = GUI(log_stream=log_stream, on_process=files_selected)
+    parser = CSVParser()
+
+    gui = GUI(
+        parser=parser,
+        log_stream=log_stream,
+        on_process=process_files,
+    )
     gui.start()
 
 

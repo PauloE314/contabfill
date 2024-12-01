@@ -1,17 +1,25 @@
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import List, Callable
+from typing import List
 import re
-import pypdf
 import logging
+import pypdf
+from codes_provider import CodesProvider
 
 
 @dataclass
 class Release:
     date: str
-    value: str
     destiny: str
-    detail: str = field(default="")
+    value: str
+    detail: str = field(default=None)
+    total: str = field(default=None)
+    tax: str = field(default=None)
+    fines: str = field(default=None)
+
+    def __post_init__(self):
+        if not self.total:
+            self.total = self.value
 
 
 def safe_re(expression, content, position=0):
@@ -19,81 +27,27 @@ def safe_re(expression, content, position=0):
     return result[position] if result else None
 
 
-def currency_to_cents(content: str):
-    result = re.match(r"R?\$\s*(\d+(?:\d*(?:\.|,)\d*)?)(?:\.|,)(\d\d)", content)
-
-    if not result:
-        return 0
-
-    whole, cents = result.groups()
-    whole = whole.replace(",", "").replace(".", "")
-
-    return int(whole) * 100 + int(cents)
-
-
-def cents_to_currency(cents: int):
-    return f"R$ {cents/100:,.2f}".replace(".", "t").replace(",", ".").replace("t", ",")
-
-
 class BaseReader:
-    BANK: str = "BASE"
+    BANK: str
+    codes_provider: CodesProvider
 
     def __init__(self, page: pypdf.PageObject):
         self.page = page
+        self.codes_provider = CodesProvider()
 
-    def handle(self) -> List[Release]:
+    def handle(self) -> Release:
         raise
 
-    def generate_entries(
-        self,
-        date: str = None,
-        value: str = None,
-        destiny: str = None,
-        tax: str = None,
-        fines: str = None,
-        total: str = None,
-        detail: str = None,
-    ):
-        tax_value = currency_to_cents(tax) if tax else 0
-        fines_value = currency_to_cents(fines) if fines else 0
-
-        if tax_value or fines_value:
-            return [
-                Release(
-                    date=date,
-                    detail=detail,
-                    destiny=destiny,
-                    value=value,
-                ),
-                Release(
-                    date=date,
-                    detail=detail,
-                    destiny=destiny,
-                    value=cents_to_currency(tax_value + fines_value),
-                ),
-                Release(
-                    date=date,
-                    detail=detail,
-                    destiny=destiny,
-                    value=total,
-                ),
-            ]
-
-        return [Release(date=date, value=value, destiny=destiny, detail=detail)]
-
     @classmethod
-    def extract_releases(cls, path: str):
+    def extract_releases(cls, path: str) -> List[Release]:
         pages = pypdf.PdfReader(path).pages
         releases = []
 
         logging.info(f"Aquivo: {path.split("/")[-1]}")
         for i, page in enumerate(pages, 1):
-            try:
-                releases.extend(cls(page).handle())
-
-                logging.info(f"Página {i} processada com sucesso")
-            except Exception as e:
-                logging.error(f"Ocorreu um erro na página {i} do arquivo {path} - {e}")
+            release = cls(page).handle()
+            releases.append(release)
+            logging.info(f"Página {i} processada com sucesso")
 
         return releases
 
@@ -121,7 +75,7 @@ class BradescoReader(BaseReader):
                 raise ValueError(f"Tipo incorreto de boleto")
 
     def pix(self, content: str):
-        return self.generate_entries(
+        return Release(
             date=safe_re(self.DATE_RE, content),
             value=safe_re(self.VALUE_RE, content),
             destiny=safe_re(self.DESTINY_RE, content),
@@ -129,7 +83,7 @@ class BradescoReader(BaseReader):
         )
 
     def tax(self, content: str):
-        return self.generate_entries(
+        return Release(
             date=safe_re(self.DATE_RE, content),
             value=safe_re(r"(R\$ \d+,\d\d)Valor principal:", content),
             total=safe_re(r"(R\$ \d+,\d\d)Valor do pagamento:", content),
@@ -140,7 +94,7 @@ class BradescoReader(BaseReader):
         )
 
     def payment(self, content: str):
-        return self.generate_entries(
+        return Release(
             date=safe_re(self.DATE_RE, content),
             value=safe_re(self.VALUE_RE, content),
             destiny=safe_re(r"(.+)Favorecido:", content),
@@ -148,7 +102,7 @@ class BradescoReader(BaseReader):
         )
 
     def charge(self, content: str):
-        return self.generate_entries(
+        return Release(
             date=safe_re(self.DATE_RE, content),
             destiny=safe_re(r"(.*)Nome Fantasia", content),
             value=safe_re(r"^(.*)Valor\s*$", content),
@@ -172,7 +126,7 @@ class StoneReader(BaseReader):
         value = safe_re(r"(R\$ \d+\.?\d+,\d+)", content)
         destiny = safe_re(r"Nome\n(.+)", content, 1)
 
-        return self.generate_entries(date, value, destiny)
+        return Release(date=date, value=value, destiny=destiny)
 
 
 READER_LIST: List[type[BaseReader]] = [
