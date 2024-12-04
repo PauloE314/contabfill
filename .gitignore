@@ -5,3 +5,6 @@ examples
 .vscode
 output
 __pycache__
+main.spec
+build
+dist

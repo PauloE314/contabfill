@@ -1,1 +1,8 @@
+altgraph==0.17.4
+packaging==24.2
+pillow==11.0.0
+pyinstaller==6.11.1
+pyinstaller-hooks-contrib==2024.10
 pypdf==5.1.0
+setuptools==75.6.0
+ttkthemes==3.2.2
