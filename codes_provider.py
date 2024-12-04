@@ -51,8 +51,10 @@ class CodesProvider:
     def __init__(self):
         pass
 
-    def credit(self, entity: str):
-        return CODE_RELATION.get(entity.upper())
+    def credit(self, entity: str) -> str:
+        value = CODE_RELATION.get(entity.upper())
+        return str(value) if value else ""
 
-    def debit(self, _: str):
-        return CODE_RELATION.get("JUROS")
+    def debit(self, _: str) -> str:
+        value = CODE_RELATION.get("JUROS")
+        return str(value) if value else ""

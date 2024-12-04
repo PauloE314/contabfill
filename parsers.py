@@ -1,7 +1,7 @@
 import csv
 import re
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 from readers import Release
 from codes_provider import CodesProvider
 
@@ -26,7 +26,7 @@ class Parser:
     DEFAULT_EXTENSION: str
     FILE_TYPES: tuple[tuple[str, str]]
 
-    def export_releases(self, releases: List[Release], filename: str = None):
+    def export_releases(self, releases: List[Release], filename: str = ""):
         pass
 
 
@@ -41,9 +41,9 @@ class CSVParser(Parser):
 
     def export_releases(self, releases: List[Release], filename=None):
         if not filename:
-            filename = f"{self.folder}{datetime.now()}.csv"
+            filename = f"{datetime.now()}.csv"
 
-        with open(filename, "w", newline="") as file:
+        with open(filename, "w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             rows = []
 
@@ -52,18 +52,20 @@ class CSVParser(Parser):
 
             writer.writerows(
                 [
-                    [
+                    (
                         "Data",
                         "Valor",
                         "Débito",
                         "Crédito",
                         "Complemento",
-                    ],
+                    ),
                     *rows,
                 ]
             )
 
-    def __generate_release_rows(self, release: Release) -> List[str]:
+    def __generate_release_rows(
+        self, release: Release
+    ) -> List[Tuple[str, str, str, str, str]]:
         tax_value = currency_to_cents(release.tax) if release.tax else 0
         fines_value = currency_to_cents(release.fines) if release.fines else 0
 
@@ -71,35 +73,35 @@ class CSVParser(Parser):
 
         if tax_value or fines_value:
             return [
-                [
+                (
                     release.date,
                     release.value,
                     self.codes_provider.credit(real_destiny),
                     "",
                     real_destiny,
-                ],
-                [
+                ),
+                (
                     release.date,
                     cents_to_currency(tax_value + fines_value),
                     "",
                     self.codes_provider.debit(real_destiny),
                     real_destiny,
-                ],
-                [
+                ),
+                (
                     release.date,
                     release.total,
                     "",
                     "",
                     real_destiny,
-                ],
+                ),
             ]
 
         return [
-            [
+            (
                 release.date,
                 release.value,
                 self.codes_provider.credit(real_destiny),
                 "",
                 real_destiny,
-            ],
+            ),
         ]

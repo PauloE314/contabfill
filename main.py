@@ -1,10 +1,9 @@
 import locale
 import logging
+from io import StringIO
 from readers import READER_LIST
 from parsers import CSVParser
 from interface import GUI
-from io import StringIO
-import traceback
 
 
 def process_files(bank, paths):
@@ -16,7 +15,7 @@ def process_files(bank, paths):
                 releases.extend(Reader.extract_releases(path))
 
             return releases
-    raise Exception("Banco não reconhecido")
+    raise TypeError("Banco não reconhecido")
 
 
 def main():

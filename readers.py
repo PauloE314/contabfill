@@ -12,10 +12,10 @@ class Release:
     date: str
     destiny: str
     value: str
-    detail: str = field(default=None)
-    total: str = field(default=None)
-    tax: str = field(default=None)
-    fines: str = field(default=None)
+    detail: str = field(default="")
+    total: str = field(default="")
+    tax: str = field(default="")
+    fines: str = field(default="")
 
     def __post_init__(self):
         if not self.total:
@@ -23,10 +23,8 @@ class Release:
 
 
 def safe_re(expression, content, position=0):
-    try:
-        return re.findall(expression, content, re.M)[position]
-    except Exception:
-        return None
+    result = re.findall(expression, content, re.M)
+    return result[position]
 
 
 class BaseReader:
@@ -38,18 +36,18 @@ class BaseReader:
         self.codes_provider = CodesProvider()
 
     def handle(self) -> Release:
-        raise
+        raise AssertionError("Uso de classe abstrata")
 
     @classmethod
     def extract_releases(cls, path: str) -> List[Release]:
         pages = pypdf.PdfReader(path).pages
         releases = []
 
-        logging.info(f"Aquivo: {path.split("/")[-1]}")
+        logging.info("Aquivo: %s", path.split("/")[-1])
         for i, page in enumerate(pages, 1):
             release = cls(page).handle()
             releases.append(release)
-            logging.info(f"Página {i} processada com sucesso")
+            logging.info("Página %i processada com sucesso", i)
 
         return releases
 
@@ -62,7 +60,7 @@ class BradescoReader(BaseReader):
 
     def handle(self):
         content = self.page.extract_text()
-        method = re.search(r"Comprovante de Transação Bancária\n(.+)", content).group(1)
+        method = re.search(r"Comprovante de Transação Bancária\n(.+)", content).group(1)  # type: ignore
 
         match method.lower():
             case "pix":
@@ -74,7 +72,7 @@ class BradescoReader(BaseReader):
             case "boleto de cobrança":
                 return self.charge(content)
             case _:
-                raise ValueError(f"Tipo incorreto de boleto")
+                raise ValueError("Tipo incorreto de boleto")
 
     def pix(self, content: str):
         return Release(
