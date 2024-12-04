@@ -23,8 +23,10 @@ class Release:
 
 
 def safe_re(expression, content, position=0):
-    result = re.findall(expression, content, re.M)
-    return result[position] if result else None
+    try:
+        return re.findall(expression, content, re.M)[position]
+    except Exception:
+        return None
 
 
 class BaseReader:
