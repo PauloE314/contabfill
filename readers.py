@@ -24,7 +24,10 @@ class Release:
 
 def safe_re(expression, content, position=0):
     result = re.findall(expression, content, re.M)
-    return result[position]
+    try:
+        return result[position] if result else ""
+    except IndexError:
+        return ""
 
 
 class BaseReader:
@@ -118,15 +121,28 @@ class StoneReader(BaseReader):
 
     def handle(self):
         content = self.page.extract_text()
+        is_pix = re.search(r"Tipo\nPix", content)
 
+        if is_pix:
+            return self.pix(content)
+        return self.payment(content)
+
+    def pix(self, content: str):
+        return Release(
+            date=self.__date(content),
+            value=safe_re(r"(R\$ \d+\.?\d+,\d+)", content),
+            destiny=safe_re(r"Nome\n(.+)", content, 1),
+            detail=safe_re(r"Descrição do Pix\n(.+)", content),
+        )
+
+    def payment(self, content: str):
+        return Release("", "", "")
+
+    def __date(self, content: str):
         date = safe_re(r"no dia (\d\d? de \w+ de \d\d\d\d)", content)
         if date:
-            date = datetime.strptime(date, "%d de %B de %Y").strftime("%d/%m/%Y")
-
-        value = safe_re(r"(R\$ \d+\.?\d+,\d+)", content)
-        destiny = safe_re(r"Nome\n(.+)", content, 1)
-
-        return Release(date=date, value=value, destiny=destiny)
+            return datetime.strptime(date, "%d de %B de %Y").strftime("%d/%m/%Y")
+        return ""
 
 
 READER_LIST: List[type[BaseReader]] = [

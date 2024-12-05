@@ -1,15 +1,16 @@
 import locale
-import logging
 from io import StringIO
+from typing import List, Tuple
 from readers import READER_LIST
 from parsers import CSVParser
 from interface import GUI
+from readers import Release
 
 
-def process_files(bank, paths):
+def process_files(bank: str, paths: Tuple[str, ...]):
     for Reader in READER_LIST:
         if bank == Reader.BANK:
-            releases = []
+            releases: List[Release] = []
 
             for path in paths:
                 releases.extend(Reader.extract_releases(path))
@@ -21,17 +22,23 @@ def process_files(bank, paths):
 def main():
     locale.setlocale(locale.LC_ALL, "pt_BR.UTF-8")
 
-    log_stream = StringIO()
-    logging.basicConfig(stream=log_stream, level=logging.INFO, format="%(message)s")
+    # parser = CSVParser()
 
-    parser = CSVParser()
+    # gui = GUI(
+    #     parser=parser,
+    #     on_process=process_files,
+    # )
+    # gui.start()
 
-    gui = GUI(
-        parser=parser,
-        log_stream=log_stream,
-        on_process=process_files,
+    print(
+        process_files(
+            READER_LIST[1].BANK,
+            (
+                "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_pix_detalhado.pdf",
+                "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_pix_simples.pdf",
+            ),
+        )
     )
-    gui.start()
 
 
 if __name__ == "__main__":

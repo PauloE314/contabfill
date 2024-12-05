@@ -1,7 +1,7 @@
 import traceback
-from typing import Callable, List
+from typing import Callable, List, Tuple
 from io import StringIO
-from tkinter import filedialog, messagebox, font
+from tkinter import filedialog, messagebox
 import tkinter as tk
 from datetime import datetime
 from readers import BANK_LIST, Release
@@ -13,21 +13,18 @@ class GUI:
     WIDTH = 1000
     HEIGHT = 600
 
-    paths: List[str] = []
+    paths: Tuple[str, ...] = tuple()
     bank_selection: tk.StringVar
     selected_files_frame: tk.Frame
-    log_stream: StringIO
-    process_handler: Callable[[str, List[str]], None]
+    process_handler: Callable[[str, Tuple[str, ...]], List[Release]]
     parser: CSVParser
 
     def __init__(
         self,
-        log_stream: StringIO,
         parser: CSVParser,
-        on_process: Callable[[str, List[str]], List[Release]],
+        on_process: Callable[[str, Tuple[str, ...]], List[Release]],
     ):
         self.parser = parser
-        self.log_stream = log_stream
         self.process_handler = on_process
         self.root = tk.Tk()
 
@@ -91,7 +88,7 @@ class GUI:
             title="PDFs para processamento", filetypes=[("Arquivos em PDF", "*.pdf")]
         )
 
-        if len(paths):
+        if len(paths) and isinstance(paths, tuple):
             self.paths = paths
             self.__update_selected_file_list()
 
@@ -148,10 +145,10 @@ class GUI:
             return
 
         self.parser.export_releases(releases, filename=full_filename)
-        self.paths = []
+        self.paths = ()
         self.__update_selected_file_list()
 
-    def __save_error_file(self, error: Exception):
+    def __save_error_file(self, _: Exception):
         file = filedialog.asksaveasfile(
             initialfile=f"Error - {datetime.now()}",
             mode="w",
