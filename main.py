@@ -22,24 +22,13 @@ def process_files(bank: str, paths: Tuple[str, ...]):
 def main():
     locale.setlocale(locale.LC_ALL, "pt_BR.UTF-8")
 
-    # parser = CSVParser()
+    parser = CSVParser()
 
-    # gui = GUI(
-    #     parser=parser,
-    #     on_process=process_files,
-    # )
-    # gui.start()
-
-    print(
-        process_files(
-            READER_LIST[1].BANK,
-            (
-                #     "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_pix_detalhado.pdf",
-                #     "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_pix_simples.pdf",
-                "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_comprovante de pagamento.pdf",
-            ),
-        )
+    gui = GUI(
+        parser=parser,
+        on_process=process_files,
     )
+    gui.start()
 
 
 if __name__ == "__main__":

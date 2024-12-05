@@ -9,7 +9,6 @@ from parsers import CSVParser
 
 
 class GUI:
-    BANKS = BANK_LIST
     WIDTH = 1000
     HEIGHT = 600
 
@@ -44,8 +43,8 @@ class GUI:
         # Bank selection
         bank_label = tk.Label(self.root, text="Banco:")
         self.bank_var = tk.StringVar(self.root)
-        self.bank_var.set(self.BANKS[0])
-        bank_selection = tk.OptionMenu(self.root, self.bank_var, *self.BANKS)
+        self.bank_var.set(BANK_LIST[0])
+        bank_selection = tk.OptionMenu(self.root, self.bank_var, *BANK_LIST)
 
         # File selection
         find_file_label = tk.Label(self.root, text="Arquivos:")
@@ -137,6 +136,7 @@ class GUI:
             return
 
         full_filename = filedialog.asksaveasfilename(
+            initialfile=f"Processamento - {datetime.now()}",
             defaultextension=self.parser.DEFAULT_EXTENSION,
             filetypes=self.parser.FILE_TYPES,
         )
