@@ -34,8 +34,9 @@ def main():
         process_files(
             READER_LIST[1].BANK,
             (
-                "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_pix_detalhado.pdf",
-                "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_pix_simples.pdf",
+                #     "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_pix_detalhado.pdf",
+                #     "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_pix_simples.pdf",
+                "/home/paulo/Documentos/dev/contabfill/examples/Stone/Exemplo_comprovante de pagamento.pdf",
             ),
         )
     )

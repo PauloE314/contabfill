@@ -130,13 +130,17 @@ class StoneReader(BaseReader):
     def pix(self, content: str):
         return Release(
             date=self.__date(content),
-            value=safe_re(r"(R\$ \d+\.?\d+,\d+)", content),
+            value=safe_re(r"Valor\n(.+)", content),
             destiny=safe_re(r"Nome\n(.+)", content, 1),
             detail=safe_re(r"Descrição do Pix\n(.+)", content),
         )
 
     def payment(self, content: str):
-        return Release("", "", "")
+        return Release(
+            date=self.__date(content),
+            value=safe_re(r"Valor\n(.+)", content),
+            destiny=safe_re(r"Favorecido\n(.+)", content),
+        )
 
     def __date(self, content: str):
         date = safe_re(r"no dia (\d\d? de \w+ de \d\d\d\d)", content)
