@@ -1,6 +1,5 @@
 import traceback
 from typing import Callable, List, Tuple
-from io import StringIO
 from tkinter import filedialog, messagebox
 import tkinter as tk
 from datetime import datetime

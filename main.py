@@ -1,5 +1,4 @@
 import locale
-from io import StringIO
 from typing import List, Tuple
 from readers import READER_LIST
 from parsers import CSVParser

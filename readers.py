@@ -118,6 +118,7 @@ class BradescoReader(BaseReader):
 
 class StoneReader(BaseReader):
     BANK = "Stone"
+    VALUE_RE = r"Valor\n(.+)"
 
     def handle(self):
         content = self.page.extract_text()
@@ -130,7 +131,7 @@ class StoneReader(BaseReader):
     def pix(self, content: str):
         return Release(
             date=self.__date(content),
-            value=safe_re(r"Valor\n(.+)", content),
+            value=safe_re(self.VALUE_RE, content),
             destiny=safe_re(r"Nome\n(.+)", content, 1),
             detail=safe_re(r"Descrição do Pix\n(.+)", content),
         )
@@ -138,7 +139,7 @@ class StoneReader(BaseReader):
     def payment(self, content: str):
         return Release(
             date=self.__date(content),
-            value=safe_re(r"Valor\n(.+)", content),
+            value=safe_re(self.VALUE_RE, content),
             destiny=safe_re(r"Favorecido\n(.+)", content),
         )
 
