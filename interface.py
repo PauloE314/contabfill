@@ -18,7 +18,7 @@ class GUI:
     process_handler: Callable[[str, Tuple[str, ...]], List[Release]]
     parser: CSVParser
     codes_relation_button: tk.Button
-    codes_relation_path: str
+    codes_relation_path: str | None
 
     def __init__(
         self,
@@ -53,16 +53,20 @@ class GUI:
         find_file_button = tk.Button(
             self.root,
             text="Selecionar arquivos",
-            command=self.__handle_file_selected_button,
+            anchor="w",
+            command=self.find_pdf_files,
+        )
+        clear_files_button = tk.Button(
+            self.root, text="X", command=self.clear_pdf_files
         )
         self.selected_files_frame = tk.Frame(self.root, borderwidth=1, relief="sunken")
-        self.__update_selected_file_list()
+        self.update_selected_file_list()
 
         # Process
         process_button = tk.Button(
             self.root,
             text="Processar",
-            command=self.__handle_process_button,
+            command=self.process,
         )
 
         # Code relation selection
@@ -71,6 +75,10 @@ class GUI:
             self.root,
             text="Ainda não selecionado",
             command=self.find_codes_relation_json,
+            anchor="w",
+        )
+        clear_codes_relation_button = tk.Button(
+            self.root, text="X", command=self.clear_codes_relation
         )
 
         # Grid
@@ -78,32 +86,42 @@ class GUI:
         self.root.configure(padx=15, pady=15)
         self.root.rowconfigure(2, weight=1)
         self.root.rowconfigure(3, weight=1)
-        self.root.columnconfigure(2, weight=1)
-        self.root.columnconfigure(3, weight=1, minsize=300)
+        self.root.columnconfigure(3, weight=1)
+        self.root.columnconfigure(4, weight=1, minsize=300)
 
         self.selected_files_frame.grid(
-            row=0, column=3, rowspan=4, sticky="news", padx=(15, 0)
+            row=0, column=4, rowspan=4, sticky="news", padx=(15, 0)
         )
         self.selected_files_frame.grid_propagate(False)
 
         bank_label.grid(row=0, column=0, sticky="W")
         bank_selection.grid(row=0, column=1, sticky="W")
         find_file_label.grid(row=1, column=0, sticky="W")
-        find_file_button.grid(row=1, column=1, sticky="W")
+        find_file_button.grid(row=1, column=1, sticky="WE")
+        clear_files_button.grid(row=1, column=2, sticky="W")
         codes_relation_label.grid(row=2, column=0, sticky="NW")
-        self.codes_relation_button.grid(row=2, column=1, sticky="NW")
+        self.codes_relation_button.grid(
+            row=2,
+            column=1,
+            sticky="NWE",
+        )
+        clear_codes_relation_button.grid(row=2, column=2, sticky="NW")
         process_button.grid(row=3, column=0, columnspan=2, sticky="SEW")
 
-    def __handle_file_selected_button(self):
+    def find_pdf_files(self):
         paths = filedialog.askopenfilenames(
             title="PDFs para processamento", filetypes=[("Arquivos em PDF", "*.pdf")]
         )
 
         if len(paths) and isinstance(paths, tuple):
             self.paths = paths
-            self.__update_selected_file_list()
+            self.update_selected_file_list()
 
-    def __update_selected_file_list(self):
+    def clear_pdf_files(self):
+        self.paths = tuple()
+        self.update_selected_file_list()
+
+    def update_selected_file_list(self):
         for child in self.selected_files_frame.winfo_children():
             child.destroy()
 
@@ -141,7 +159,11 @@ class GUI:
                 text=f"Selecionado: {path.split("/")[-1]}"
             )
 
-    def __handle_process_button(self):
+    def clear_codes_relation(self):
+        self.codes_relation_button.configure(text="Ainda não selecionado")
+        self.codes_relation_path = None
+
+    def process(self):
         if len(self.paths) == 0 or not self.bank_var.get():
             messagebox.showwarning(
                 title="Processamento indevido",
@@ -154,7 +176,7 @@ class GUI:
         try:
             releases = self.process_handler(self.bank_var.get(), self.paths)
         except Exception as e:
-            self.__save_error_file(e)
+            self.save_error_file(e)
             return
 
         full_filename = filedialog.asksaveasfilename(
@@ -170,9 +192,9 @@ class GUI:
             releases, filename=full_filename, codes_path=self.codes_relation_path
         )
         self.paths = ()
-        self.__update_selected_file_list()
+        self.update_selected_file_list()
 
-    def __save_error_file(self, _: Exception):
+    def save_error_file(self, _: Exception):
         file = filedialog.asksaveasfile(
             initialfile=f"Error - {datetime.now()}",
             mode="w",
