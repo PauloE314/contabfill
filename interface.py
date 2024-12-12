@@ -12,10 +12,13 @@ class GUI:
     HEIGHT = 600
 
     paths: Tuple[str, ...] = tuple()
+
     bank_selection: tk.StringVar
     selected_files_frame: tk.Frame
     process_handler: Callable[[str, Tuple[str, ...]], List[Release]]
     parser: CSVParser
+    codes_relation_button: tk.Button
+    codes_relation_path: str
 
     def __init__(
         self,
@@ -62,24 +65,34 @@ class GUI:
             command=self.__handle_process_button,
         )
 
+        # Code relation selection
+        codes_relation_label = tk.Label(self.root, text="Relação de códigos: ")
+        self.codes_relation_button = tk.Button(
+            self.root,
+            text="Ainda não selecionado",
+            command=self.find_codes_relation_json,
+        )
+
         # Grid
         self.root.maxsize(1000, 500)
         self.root.configure(padx=15, pady=15)
-        self.root.rowconfigure(1, weight=1)
         self.root.rowconfigure(2, weight=1)
+        self.root.rowconfigure(3, weight=1)
         self.root.columnconfigure(2, weight=1)
         self.root.columnconfigure(3, weight=1, minsize=300)
 
         self.selected_files_frame.grid(
-            row=0, column=3, rowspan=3, sticky="news", padx=(15, 0)
+            row=0, column=3, rowspan=4, sticky="news", padx=(15, 0)
         )
         self.selected_files_frame.grid_propagate(False)
 
         bank_label.grid(row=0, column=0, sticky="W")
         bank_selection.grid(row=0, column=1, sticky="W")
-        find_file_label.grid(row=1, column=0, sticky="NW")
-        find_file_button.grid(row=1, column=1, sticky="NW")
-        process_button.grid(row=2, column=0, columnspan=2, sticky="SEW")
+        find_file_label.grid(row=1, column=0, sticky="W")
+        find_file_button.grid(row=1, column=1, sticky="W")
+        codes_relation_label.grid(row=2, column=0, sticky="NW")
+        self.codes_relation_button.grid(row=2, column=1, sticky="NW")
+        process_button.grid(row=3, column=0, columnspan=2, sticky="SEW")
 
     def __handle_file_selected_button(self):
         paths = filedialog.askopenfilenames(
@@ -118,6 +131,16 @@ class GUI:
             filename = path.split("/")[-1]
             tk.Label(self.selected_files_frame, text=filename).pack()
 
+    def find_codes_relation_json(self):
+        path = filedialog.askopenfilename(
+            title="JSON de códigos", filetypes=[("Arquivo JSON", "*.json")]
+        )
+        if path:
+            self.codes_relation_path = path
+            self.codes_relation_button.configure(
+                text=f"Selecionado: {path.split("/")[-1]}"
+            )
+
     def __handle_process_button(self):
         if len(self.paths) == 0 or not self.bank_var.get():
             messagebox.showwarning(
@@ -143,7 +166,9 @@ class GUI:
         if not full_filename:
             return
 
-        self.parser.export_releases(releases, filename=full_filename)
+        self.parser.export_releases(
+            releases, filename=full_filename, codes_path=self.codes_relation_path
+        )
         self.paths = ()
         self.__update_selected_file_list()
 

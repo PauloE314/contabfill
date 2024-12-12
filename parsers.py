@@ -39,9 +39,12 @@ class CSVParser(Parser):
         super()
         self.codes_provider = CodesProvider()
 
-    def export_releases(self, releases: List[Release], filename=None):
+    def export_releases(self, releases: List[Release], filename=None, codes_path=None):
         if not filename:
             filename = f"{datetime.now()}.csv"
+
+        if codes_path:
+            self.codes_provider.set_codes_relation_from_json(codes_path)
 
         with open(filename, "w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)

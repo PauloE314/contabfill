@@ -1,3 +1,5 @@
+import json
+
 CODE_RELATION = {
     "AG PRIME COMERCIO DE PNEUS PEÇAS & SERV.AUTOMOTIVO": 5000905,
     "ANA LUCIA MARCONE DE SOUSA": 5001446,
@@ -48,13 +50,20 @@ CODE_RELATION = {
 
 
 class CodesProvider:
+    relation: dict[str, int]
+
     def __init__(self):
-        pass
+        self.relation = CODE_RELATION
 
     def credit(self, entity: str) -> str:
-        value = CODE_RELATION.get(entity.upper())
+        value = self.relation.get(entity.upper())
         return str(value) if value else ""
 
     def debit(self, _: str) -> str:
-        value = CODE_RELATION.get("JUROS")
+        value = self.relation.get("JUROS")
         return str(value) if value else ""
+
+    def set_codes_relation_from_json(self, path: str):
+        with open(path, "r") as file:
+            data = json.load(file)
+            self.relation = data
