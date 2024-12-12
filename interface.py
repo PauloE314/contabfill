@@ -180,7 +180,7 @@ class GUI:
             return
 
         full_filename = filedialog.asksaveasfilename(
-            initialfile=f"Processamento - {datetime.now()}",
+            initialfile=f"Processamento - {datetime.now()}{self.parser.DEFAULT_EXTENSION}",
             defaultextension=self.parser.DEFAULT_EXTENSION,
             filetypes=self.parser.FILE_TYPES,
         )

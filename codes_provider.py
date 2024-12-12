@@ -53,17 +53,21 @@ class CodesProvider:
     relation: dict[str, int]
 
     def __init__(self):
-        self.relation = CODE_RELATION
+        self.relation = self.__upper_dict(CODE_RELATION)
 
     def credit(self, entity: str) -> str:
         value = self.relation.get(entity.upper())
+        print(self.relation)
         return str(value) if value else ""
 
     def debit(self, _: str) -> str:
-        value = self.relation.get("JUROS")
+        value = self.relation.get("JUROS") or 4701
         return str(value) if value else ""
 
     def set_codes_relation_from_json(self, path: str):
         with open(path, "r") as file:
             data = json.load(file)
-            self.relation = data
+            self.relation = self.__upper_dict(data)
+
+    def __upper_dict(self, d: dict):
+        return {k.upper(): v for k, v in d.items()}
