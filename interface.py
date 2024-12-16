@@ -80,6 +80,7 @@ class GUI:
         clear_codes_relation_button = tk.Button(
             self.root, text="X", command=self.clear_codes_relation
         )
+        self.codes_relation_path = None
 
         # Grid
         self.root.maxsize(1000, 500)
