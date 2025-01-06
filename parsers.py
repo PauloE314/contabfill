@@ -79,15 +79,15 @@ class CSVParser(Parser):
                 (
                     release.date,
                     release.value,
-                    self.codes_provider.credit(real_destiny),
                     "",
+                    self.codes_provider.credit(real_destiny),
                     real_destiny,
                 ),
                 (
                     release.date,
                     cents_to_currency(tax_value + fines_value),
-                    "",
                     self.codes_provider.debit(real_destiny),
+                    "",
                     real_destiny,
                 ),
                 (
@@ -103,8 +103,8 @@ class CSVParser(Parser):
             (
                 release.date,
                 release.value,
-                self.codes_provider.credit(real_destiny),
                 "",
+                self.codes_provider.credit(real_destiny),
                 real_destiny,
             ),
         ]

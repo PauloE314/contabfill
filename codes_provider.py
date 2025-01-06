@@ -1,5 +1,5 @@
 import json
-from difflib import SequenceMatcher, get_close_matches
+import difflib
 
 CODE_RELATION = {
     "JUROS": 4701,
@@ -32,6 +32,6 @@ class CodesProvider:
     def __fetch(self, inpt: str) -> int | None:
         inpt = inpt.upper()
         keys = self.relation.keys()
-        close = get_close_matches(inpt, keys, 1)
+        close = difflib.get_close_matches(inpt, keys, 1, 0.8)
 
         return self.relation.get(close[0]) if close else None
