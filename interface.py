@@ -5,6 +5,7 @@ import tkinter as tk
 from datetime import datetime
 from readers import BANK_LIST, Release
 from parsers import CSVParser
+from readers import BaseReader
 
 
 class GUI:
@@ -15,7 +16,7 @@ class GUI:
 
     bank_selection: tk.StringVar
     selected_files_frame: tk.Frame
-    process_handler: Callable[[str, Tuple[str, ...]], List[Release]]
+    reader_chooser: Callable[[str], type[BaseReader]]
     parser: CSVParser
     codes_relation_button: tk.Button
     codes_relation_path: str | None
@@ -23,10 +24,10 @@ class GUI:
     def __init__(
         self,
         parser: CSVParser,
-        on_process: Callable[[str, Tuple[str, ...]], List[Release]],
+        reader_chooser: Callable[[str], type[BaseReader]],
     ):
         self.parser = parser
-        self.process_handler = on_process
+        self.reader_chooser = reader_chooser
         self.root = tk.Tk()
 
     def start(self):
@@ -175,7 +176,8 @@ class GUI:
         releases: List[Release] = []
 
         try:
-            releases = self.process_handler(self.bank_var.get(), self.paths)
+            Reader = self.reader_chooser(self.bank_var.get())
+            releases = Reader.extract_releases_from_files(self.paths)
         except Exception as e:
             self.save_error_file(e)
             return

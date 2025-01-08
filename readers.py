@@ -1,6 +1,6 @@
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Tuple, Iterable
 import re
 import pypdf
 
@@ -54,6 +54,15 @@ class BaseReader:
                 release.origin_file_and_page = (path.split("/")[-1], index)
 
             releases.append(release)
+
+        return releases
+
+    @classmethod
+    def extract_releases_from_files(cls, paths: Iterable[str]) -> List[Release]:
+        releases: List[Release] = []
+
+        for path in paths:
+            releases.extend(cls.extract_releases(path))
 
         return releases
 
@@ -151,6 +160,14 @@ class StoneReader(BaseReader):
         if date:
             return datetime.strptime(date, "%d de %B de %Y").strftime("%d/%m/%Y")
         return ""
+
+
+def reader_chooser(bank: str):
+    for Reader in READER_LIST:
+        if bank == Reader.BANK:
+            return Reader
+
+    raise TypeError("Banco não reconhecido")
 
 
 READER_LIST: List[type[BaseReader]] = [
