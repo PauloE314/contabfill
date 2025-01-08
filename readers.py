@@ -1,10 +1,8 @@
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Tuple
 import re
-import logging
 import pypdf
-from codes_provider import CodesProvider
 
 
 @dataclass
@@ -16,6 +14,8 @@ class Release:
     total: str = field(default="")
     tax: str = field(default="")
     fines: str = field(default="")
+    origin_file_and_page: Tuple[str, int] = field(default_factory=tuple, repr=False)
+    bank: str = field(default="")
 
     def __post_init__(self):
         if not self.total:
@@ -32,11 +32,9 @@ def safe_re(expression, content, position=0):
 
 class BaseReader:
     BANK: str
-    codes_provider: CodesProvider
 
     def __init__(self, page: pypdf.PageObject):
         self.page = page
-        self.codes_provider = CodesProvider()
 
     def handle(self) -> Release:
         raise AssertionError("Uso de classe abstrata")
@@ -46,11 +44,16 @@ class BaseReader:
         pages = pypdf.PdfReader(path).pages
         releases = []
 
-        logging.info("Aquivo: %s", path.split("/")[-1])
-        for i, page in enumerate(pages, 1):
+        for index, page in enumerate(pages):
             release = cls(page).handle()
+
+            if not release.bank:
+                release.bank = cls.BANK
+
+            if not release.origin_file_and_page:
+                release.origin_file_and_page = (path.split("/")[-1], index)
+
             releases.append(release)
-            logging.info("Página %i processada com sucesso", i)
 
         return releases
 

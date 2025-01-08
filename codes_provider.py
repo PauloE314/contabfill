@@ -1,25 +1,32 @@
 import json
 import difflib
+from readers import BradescoReader, StoneReader
 
-CODE_RELATION = {
-    "JUROS": 4701,
-}
+
+BANK_CODES = {BradescoReader.BANK: 9, StoneReader.BANK: 6276}
 
 
 class CodesProvider:
-    SIMILARITY_RATIO = 85
+    SIMILARITY_RATIO = 0.85
     relation: dict[str, int]
 
     def __init__(self):
-        self.relation = self.__upper_dict(CODE_RELATION)
+        self.relation = {}
 
-    def credit(self, entity: str) -> str:
-        value = self.__fetch(entity)
-        return str(value) if value else ""
+    def debit(self, entity: str) -> int | None:
+        entity = entity.upper()
+        keys = self.relation.keys()
+        close = difflib.get_close_matches(entity, keys, 1, self.SIMILARITY_RATIO)
 
-    def debit(self, _: str) -> str:
-        value = self.relation.get("JUROS") or 4701
-        return str(value) if value else ""
+        return self.relation.get(close[0]) if close else None
+
+    def credit(self, bank: str) -> int:
+        code = BANK_CODES[bank]
+
+        if code:
+            return code
+
+        raise ValueError(f"Tipo desconhecido de banco: {bank}")
 
     def set_codes_relation_from_json(self, path: str):
         with open(path, "r", encoding="utf-8") as file:
@@ -28,10 +35,3 @@ class CodesProvider:
 
     def __upper_dict(self, d: dict):
         return {k.upper(): v for k, v in d.items()}
-
-    def __fetch(self, inpt: str) -> int | None:
-        inpt = inpt.upper()
-        keys = self.relation.keys()
-        close = difflib.get_close_matches(inpt, keys, 1, 0.8)
-
-        return self.relation.get(close[0]) if close else None

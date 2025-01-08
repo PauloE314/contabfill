@@ -27,7 +27,7 @@ class Parser:
     FILE_TYPES: tuple[tuple[str, str]]
 
     def export_releases(self, releases: List[Release], filename: str = ""):
-        pass
+        raise Exception("Not implemented")
 
 
 class CSVParser(Parser):
@@ -61,6 +61,7 @@ class CSVParser(Parser):
                         "Débito",
                         "Crédito",
                         "Complemento",
+                        "Localização",
                     ),
                     *rows,
                 ]
@@ -68,34 +69,45 @@ class CSVParser(Parser):
 
     def __generate_release_rows(
         self, release: Release
-    ) -> List[Tuple[str, str, str, str, str]]:
+    ) -> List[Tuple[str, str, str, str, str, str]]:
         tax_value = currency_to_cents(release.tax) if release.tax else 0
         fines_value = currency_to_cents(release.fines) if release.fines else 0
+        total_tax_fines = cents_to_currency(tax_value + fines_value)
 
         real_destiny = release.detail or release.destiny
+
+        credit = str(self.codes_provider.credit(release.bank) or "")
+        debit = str(self.codes_provider.debit(real_destiny) or "")
+
+        location = (
+            f"{release.origin_file_and_page[0]} - {release.origin_file_and_page[1]}"
+        )
 
         if tax_value or fines_value:
             return [
                 (
                     release.date,
                     release.value,
+                    debit,
                     "",
-                    self.codes_provider.credit(real_destiny),
                     real_destiny,
+                    location,
                 ),
                 (
                     release.date,
-                    cents_to_currency(tax_value + fines_value),
-                    self.codes_provider.debit(real_destiny),
+                    total_tax_fines,
+                    debit,
                     "",
                     real_destiny,
+                    location,
                 ),
                 (
                     release.date,
                     release.total,
                     "",
-                    "",
+                    credit,
                     real_destiny,
+                    location,
                 ),
             ]
 
@@ -103,8 +115,9 @@ class CSVParser(Parser):
             (
                 release.date,
                 release.value,
-                "",
-                self.codes_provider.credit(real_destiny),
+                debit,
+                credit,
                 real_destiny,
+                location,
             ),
         ]
