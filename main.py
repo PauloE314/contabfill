@@ -1,5 +1,5 @@
 import locale
-from readers import reader_chooser
+from readers import ReaderFactory
 from parsers import CSVParser
 from interface import GUI
 
@@ -9,7 +9,7 @@ def main():
 
     gui = GUI(
         parser=CSVParser(),
-        reader_chooser=reader_chooser,
+        reader_factory=ReaderFactory(),
     )
     gui.start()
 

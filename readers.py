@@ -1,7 +1,8 @@
+from abc import ABC, abstractmethod
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import List, Tuple, Iterable
 import re
+from typing import List, Tuple, Iterable
 import pypdf
 
 
@@ -30,51 +31,41 @@ def safe_re(expression, content, position=0):
         return ""
 
 
-class BaseReader:
+class Reader(ABC):
     BANK: str
 
-    def __init__(self, page: pypdf.PageObject):
-        self.page = page
+    @abstractmethod
+    def read(self, page: pypdf.PageObject) -> Release:
+        pass
 
-    def handle(self) -> Release:
-        raise AssertionError("Uso de classe abstrata")
-
-    @classmethod
-    def extract_releases(cls, path: str) -> List[Release]:
-        pages = pypdf.PdfReader(path).pages
-        releases = []
-
-        for index, page in enumerate(pages):
-            release = cls(page).handle()
-
-            if not release.bank:
-                release.bank = cls.BANK
-
-            if not release.origin_file_and_page:
-                release.origin_file_and_page = (path.split("/")[-1], index)
-
-            releases.append(release)
-
-        return releases
-
-    @classmethod
-    def extract_releases_from_files(cls, paths: Iterable[str]) -> List[Release]:
+    def extract_releases_from_files(self, paths: Iterable[str]) -> List[Release]:
         releases: List[Release] = []
 
         for path in paths:
-            releases.extend(cls.extract_releases(path))
+            pages = pypdf.PdfReader(path).pages
+
+            for index, page in enumerate(pages):
+                release = self.read(page)
+
+                if not release.bank:
+                    release.bank = self.__class__.BANK
+
+                if not release.origin_file_and_page:
+                    release.origin_file_and_page = (path.split("/")[-1], index)
+
+                releases.append(release)
 
         return releases
 
 
-class BradescoReader(BaseReader):
+class BradescoReader(Reader):
     BANK = "Bradesco"
     DESTINY_RE = r"(.+)Nome:"
     DATE_RE = r"Data da operação: (\d{2}\/\d{2}\/\d{2})"
     VALUE_RE = r"(.+)Valor:"
 
-    def handle(self):
-        content = self.page.extract_text()
+    def read(self, page):
+        content = page.extract_text()
         method = re.search(r"Comprovante de Transação Bancária\n(.+)", content).group(1)  # type: ignore
 
         match method.lower():
@@ -128,12 +119,12 @@ class BradescoReader(BaseReader):
         )
 
 
-class StoneReader(BaseReader):
+class StoneReader(Reader):
     BANK = "Stone"
     VALUE_RE = r"Valor\n(.+)"
 
-    def handle(self):
-        content = self.page.extract_text()
+    def read(self, page):
+        content = page.extract_text()
         is_pix = re.search(r"Tipo\nPix", content)
 
         if is_pix:
@@ -162,17 +153,18 @@ class StoneReader(BaseReader):
         return ""
 
 
-def reader_chooser(bank: str):
-    for Reader in READER_LIST:
-        if bank == Reader.BANK:
-            return Reader
-
-    raise TypeError("Banco não reconhecido")
-
-
-READER_LIST: List[type[BaseReader]] = [
+READER_LIST: List[type[Reader]] = [
     BradescoReader,
     StoneReader,
 ]
 
 BANK_LIST = list(map(lambda Reader: Reader.BANK, READER_LIST))
+
+
+class ReaderFactory:
+    def create(self, bank: str) -> Reader:
+        for Reader in READER_LIST:
+            if bank == Reader.BANK:
+                return Reader()
+
+        raise ValueError("Banco não reconhecido")

@@ -1,6 +1,7 @@
+from abc import ABC, abstractmethod
 import csv
-import re
 from datetime import datetime
+import re
 from typing import List, Tuple
 from readers import Release
 from codes_provider import CodesProvider
@@ -22,12 +23,13 @@ def cents_to_currency(cents: int):
     return f"R$ {cents/100:,.2f}".replace(".", "t").replace(",", ".").replace("t", ",")
 
 
-class Parser:
+class Parser(ABC):
     DEFAULT_EXTENSION: str
     FILE_TYPES: tuple[tuple[str, str]]
 
+    @abstractmethod
     def export_releases(self, releases: List[Release], filename: str = ""):
-        raise Exception("Not implemented")
+        pass
 
 
 class CSVParser(Parser):
